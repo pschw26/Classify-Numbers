@@ -6,25 +6,22 @@ Created on Sun Sep 22 20:34:03 2024
 """
 
 
-
-
-import sys
-sys.path.append('C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_polygons/numbers')
-# sys.path.append('C:/Users/wq271/AAA_programming/Projects/AI_models/AI Models/Classify_polygons/numbers')
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt 
 import statistics as stat
-from load_data import get_data
-
 import os 
-# lab pc dir
-# os.chdir('C:/Users/wq271/AAA_programming/Projects/AI_models/AI Models/Classify_polygons/')
+# labpc dir 
+path = 'C:/Users/wq271/AAA_programming/Projects/AI_models/AI Models/Classify_polygons'
+# laptop dir 
+path = 'C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_polygons'
 
-# laptop dir
-os.chdir('C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_polygons/')
+model_name ='batch_10k'
 
-path = 'C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_polygons/numbers/'
+os.chdir(path + '/numbers')
+from load_data import get_data
+os.chdir(path)
+
 
 '''TODO:
     - check out problem with minimizing to value around 1 and also increasing oscillations at 10k samples e.g.'''
@@ -32,15 +29,15 @@ path = 'C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_poly
      
 ### training params ###       
      
-sample_size =1000
+sample_size = 10000
 
-batch_size = 5
+batch_size = 16
 
 
 ### get data info from target csv ###
 
 # pc dir numbers
-samples, y = get_data('numbers/data', sample_size, 'training')
+samples, y = get_data(path+'/numbers/data', sample_size, 'training')
                   
 
 ### introduce params from files ###
@@ -238,12 +235,11 @@ def gradient_descent(batch_dC_dw, batch_dC_db, learning_rate):
         
     # gradient descent for weights 
     for l in range(len(weights)):
-        weights[l] -= learning_rate * (1/batch_size*batch_dC_dw[l])
+        weights[l] -= learning_rate * ((1/batch_size)*batch_dC_dw[l])
         
     for l in range(len(biases)):
-        biases[l] -= learning_rate * (1/batch_size*batch_dC_db[l])
+        biases[l] -= learning_rate * ((1/batch_size)*batch_dC_db[l])
         
-    return weights, biases 
 
 
 
@@ -252,9 +248,9 @@ for k,sample in enumerate(samples):
     layers = forwards(image_array, weights, biases)
     backwards(layers, weights)
     if (k+1)%batch_size == 0:
-        weights, biases = gradient_descent(batch_dC_dw, batch_dC_db, learning_rate)
+        gradient_descent(batch_dC_dw, batch_dC_db, learning_rate)
         datapoints[0].append(k)
-        datapoints[1].append(cost)
+        datapoints[1].append(stat.mean(batch_cost))
         batch_dC_dw = zero_matricies
         batch_dC_db = zero_vectors
         batch_cost = []
@@ -267,15 +263,16 @@ plt.show()
 
 #%%
 
+
 for i,matrix in enumerate(weights):
     print(matrix.shape)
     matrix = pd.DataFrame(matrix)
-    matrix.to_csv(path+f'W{len(weights)-i}_trained.csv',mode='w', index=False)
+    matrix.to_csv(path+'/numbers/models/'+model_name+f'/W{len(weights)-i}_trained.csv',mode='w', index=False)
     
 for i,vector in enumerate(biases):
     print(vector.shape)
     vector = pd.DataFrame(vector)
-    vector.to_csv(path+f'b{len(biases)-i}_trained.csv',mode='w', index=False)
+    vector.to_csv(path+'/numbers/models/'+model_name+f'/b{len(biases)-i}_trained.csv',mode='w', index=False)
 
 #%%
 # from number_model_v1_1 import process_image
@@ -283,9 +280,9 @@ for i,vector in enumerate(biases):
 test_size = 5000
 
 # test model
-W1 = pd.read_csv(path+'W1_trained.csv')
-W2 = pd.read_csv(path+'W2_trained.csv')
-W3 = pd.read_csv(path+'W3_trained.csv')
+W1 = pd.read_csv(path+'/numbers/models/'+model_name+'/W1_trained.csv')
+W2 = pd.read_csv(path+'/numbers/models/'+model_name+'/W2_trained.csv')
+W3 = pd.read_csv(path+'/numbers/models/'+model_name+'/W3_trained.csv')
 
 # introduce weight matricies
 # W1 = pd.read_csv('params/W1.txt')
@@ -297,9 +294,9 @@ W2 = np.array(W2)
 W3 = np.array(W3)
 
 # test model
-bias1 = pd.read_csv(path+'b1_trained.csv')
-bias2 = pd.read_csv(path+'b2_trained.csv')
-bias3 = pd.read_csv(path+'b3_trained.csv')
+bias1 = pd.read_csv(path+'/numbers/models/'+model_name+'/b1_trained.csv')
+bias2 = pd.read_csv(path+'/numbers/models/'+model_name+'/b2_trained.csv')
+bias3 = pd.read_csv(path+'/numbers/models/'+model_name+'/b3_trained.csv')
 
 #ref model
 # bias1 = pd.read_csv('params/bias1.txt')
@@ -310,7 +307,7 @@ bias1 = np.array(bias1['0'])
 bias2 = np.array(bias2['0'])
 bias3 = np.array(bias3['0'])
 
-test, y = get_data('numbers/data', test_size, 'test')
+test, y = get_data(path+'/numbers/data', test_size, 'test')
 
 weights_test = [W3, W2, W1]
 biases_test = [bias3, bias2, bias1]
@@ -328,7 +325,7 @@ def process_image(sample):
     image_frame = pd.DataFrame(sample)
 
     # LAPTOP DIR
-    image_frame.to_csv('C:/Daten/Peter/Studium/A_Programme_Hiwi/Projekte/AI-Models/Classify_polygons/image_frame.csv', index = False)
+    image_frame.to_csv(path+'/image_frame.csv', index = False)
     
     # flattened 1024 x 1 array with 0 and 1 
     image_array = np.array(image_frame).flatten() # with 1/4 of original res: this array has 1024 entries 
